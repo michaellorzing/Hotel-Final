@@ -24,6 +24,7 @@ const RoomProvider = ({ children }) => {
 		let maxSize = Math.max(...rooms.map(item => item.size));
 		let featuredRooms = rooms.filter(room => room.featured === true);
 		setData({
+			...data,
 			rooms,
 			featuredRooms,
 			sortedRooms: rooms,
@@ -77,9 +78,9 @@ const RoomProvider = ({ children }) => {
 		}
 
 		setData({
+			...data,
 			sortedRooms: tempRooms
 		});
-		console.log(data);
 	};
 
 	const handleChange = e => {
@@ -87,8 +88,10 @@ const RoomProvider = ({ children }) => {
 			e.target.type === 'checkbox' ? e.target.checked : e.target.value;
 
 		setData({
+			...data,
 			[e.target.name]: value
 		});
+		console.log(data);
 		filterRooms();
 	};
 
