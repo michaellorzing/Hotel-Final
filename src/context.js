@@ -51,19 +51,45 @@ const RoomProvider = ({ children }) => {
 		return roomSlug;
 	};
 
-	const handleChange = e => {
-		const target = e.target;
-		const name = e.target.name;
-		const value = e.type === 'checkbox' ? target.checked : target.value;
+	const filterRooms = () => {
+		let {
+			rooms,
+			type,
+			capacity,
+			price,
+			minSize,
+			maxSize,
+			breakfast,
+			pets
+		} = data;
+
+		let tempRooms = [...rooms];
+
+		capacity = parseInt(capacity);
+		price = parseInt(price);
+
+		if (type !== 'all') {
+			tempRooms = tempRooms.filter(room => room.type === type);
+		}
+
+		if (capacity !== 1) {
+			tempRooms = tempRooms.filter(room => room.capacity >= capacity);
+		}
+
 		setData({
-			...data,
-			[name]: value
+			sortedRooms: tempRooms
 		});
-		filterRooms();
+		console.log(data);
 	};
 
-	const filterRooms = () => {
-		console.log('hello');
+	const handleChange = e => {
+		const value =
+			e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+
+		setData({
+			[e.target.name]: value
+		});
+		filterRooms();
 	};
 
 	return (

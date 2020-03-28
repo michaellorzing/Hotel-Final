@@ -3,6 +3,10 @@ import PropTypes from 'prop-types';
 import { RoomContext } from '../context';
 import Title from './Title';
 
+const getUnique = (items, desc) => {
+	return [...new Set(items.map(item => item[desc]))];
+};
+
 const RoomsFilter = ({ rooms }) => {
 	const value = useContext(RoomContext);
 	const {
@@ -15,16 +19,16 @@ const RoomsFilter = ({ rooms }) => {
 		minSize,
 		breakfast,
 		pets
-  } = value;
-  
-  console.log(value)
-
-	const getUnique = (items, desc) => {
-		return [...new Set(items.map(item => item[desc]))];
-	};
+	} = value;
 
 	let types = getUnique(rooms, 'type');
 	types = ['all', ...types];
+
+	types = types.map((item, index) => (
+		<option key={index} value={item}>
+			{item}
+		</option>
+	));
 
 	return (
 		<Fragment>
@@ -40,9 +44,7 @@ const RoomsFilter = ({ rooms }) => {
 							className='form-control'
 							onChange={e => handleChange(e)}
 						>
-							{types.map((type, index) => (
-								<option key={index}>{type}</option>
-							))}
+							{types}
 						</select>
 					</div>
 				</form>
