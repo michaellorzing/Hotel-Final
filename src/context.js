@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { Component } from 'react';
 import items from './data';
 
-const RoomProvider = ({ children }) => {
-	const [data, setData] = useState({
+const RoomContext = React.createContext();
+
+export default class RoomProvider extends Component {
+	state = {
 		rooms: [],
 		sortedRooms: [],
 		featuredRooms: [],
 		loading: true,
+		//
 		type: 'all',
 		capacity: 1,
 		price: 0,
@@ -16,26 +19,54 @@ const RoomProvider = ({ children }) => {
 		maxSize: 0,
 		breakfast: false,
 		pets: false
-	});
+	};
 
-	useEffect(() => {
-		let rooms = formatData(items);
+	// getData = async () => {
+	//   try {
+	//     let response = await Client.getEntries({
+	//       content_type: "beachResortRoom"
+	//     });
+	//     let rooms = this.formatData(response.items);
+
+	//     let featuredRooms = rooms.filter(room => room.featured === true);
+	//     //
+	//     let maxPrice = Math.max(...rooms.map(item => item.price));
+	//     let maxSize = Math.max(...rooms.map(item => item.size));
+	//     this.setState({
+	//       rooms,
+	//       featuredRooms,
+	//       sortedRooms: rooms,
+	//       loading: false,
+	//       //
+	//       price: maxPrice,
+	//       maxPrice,
+	//       maxSize
+	//     });
+	//   } catch (error) {
+	//     console.log(error);
+	//   }
+	// };
+
+	componentDidMount() {
+		// this.getData();
+		let rooms = this.formatData(items);
+		let featuredRooms = rooms.filter(room => room.featured === true);
+		//
 		let maxPrice = Math.max(...rooms.map(item => item.price));
 		let maxSize = Math.max(...rooms.map(item => item.size));
-		let featuredRooms = rooms.filter(room => room.featured === true);
-		setData({
-			...data,
+		this.setState({
 			rooms,
 			featuredRooms,
 			sortedRooms: rooms,
 			loading: false,
+			//
 			price: maxPrice,
 			maxPrice,
 			maxSize
 		});
-	}, []);
+	}
 
-	const formatData = items => {
+	formatData(items) {
 		let tempItems = items.map(item => {
 			let id = item.sys.id;
 			let images = item.fields.images.map(image => image.fields.file.url);
@@ -44,15 +75,25 @@ const RoomProvider = ({ children }) => {
 			return room;
 		});
 		return tempItems;
+	}
+	getRoom = slug => {
+		let tempRooms = [...this.state.rooms];
+		const room = tempRooms.find(room => room.slug === slug);
+		return room;
 	};
+	handleChange = event => {
+		const target = event.target;
+		const value = target.type === 'checkbox' ? target.checked : target.value;
+		const name = target.name;
 
-	const getRoom = slug => {
-		let tempRooms = [...data.rooms];
-		let roomSlug = tempRooms.find(room => room.slug === slug);
-		return roomSlug;
+		this.setState(
+			{
+				[name]: value
+			},
+			this.filterRooms
+		);
 	};
-
-	const filterRooms = () => {
+	filterRooms = () => {
 		let {
 			rooms,
 			type,
@@ -62,7 +103,7 @@ const RoomProvider = ({ children }) => {
 			maxSize,
 			breakfast,
 			pets
-		} = data;
+		} = this.state;
 
 		let tempRooms = [...rooms];
 
@@ -72,39 +113,51 @@ const RoomProvider = ({ children }) => {
 		if (type !== 'all') {
 			tempRooms = tempRooms.filter(room => room.type === type);
 		}
-
 		if (capacity !== 1) {
 			tempRooms = tempRooms.filter(room => room.capacity >= capacity);
 		}
 
-		setData({
-			...data,
+		tempRooms = tempRooms.filter(room => room.price <= price);
+
+		tempRooms = tempRooms.filter(
+			room => room.size >= minSize && room.size <= maxSize
+		);
+
+		if (breakfast) {
+			tempRooms = tempRooms.filter(room => room.breakfast === true);
+		}
+
+		if (pets) {
+			tempRooms = tempRooms.filter(room => room.pets === true);
+		}
+		this.setState({
 			sortedRooms: tempRooms
 		});
 	};
+	render() {
+		return (
+			<RoomContext.Provider
+				value={{
+					...this.state,
+					getRoom: this.getRoom,
+					handleChange: this.handleChange
+				}}
+			>
+				{this.props.children}
+			</RoomContext.Provider>
+		);
+	}
+}
+const RoomConsumer = RoomContext.Consumer;
 
-	const handleChange = e => {
-		const value =
-			e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+export { RoomProvider, RoomConsumer, RoomContext };
 
-		setData({
-			...data,
-			[e.target.name]: value
-		});
-		console.log(data);
-		filterRooms();
+export function withRoomConsumer(Component) {
+	return function ConsumerWrapper(props) {
+		return (
+			<RoomConsumer>
+				{value => <Component {...props} context={value} />}
+			</RoomConsumer>
+		);
 	};
-
-	return (
-		<RoomContext.Provider
-			value={{ ...data, getRoom, handleChange, filterRooms }}
-		>
-			{children}
-		</RoomContext.Provider>
-	);
-};
-
-export const RoomContext = React.createContext();
-export const RoomConsumer = RoomContext.Consumer;
-
-export default RoomProvider;
+}
